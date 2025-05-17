@@ -4,7 +4,6 @@ An evaluation of the performance and recency of various Python signal processing
 Testing and evaluating the following packages:
 - Neurokit2
 - HeartPy
-- HRV-Analysis
 - SciPy
 - NumPy
 - PyWavelets
