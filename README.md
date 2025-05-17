@@ -8,3 +8,4 @@ Testing and evaluating the following packages:
 - SciPy
 - NumPy
 - PyWavelets
+- Biosppy
