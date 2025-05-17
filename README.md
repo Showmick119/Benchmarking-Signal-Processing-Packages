@@ -6,4 +6,5 @@ Testing and evaluating the following packages:
 - HeartPy
 - HRV-Analysis
 - SciPy
+- NumPy
 - PyWavelets
