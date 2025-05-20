@@ -17,5 +17,9 @@ print(bangle_data.head())
 polar_data = pd.read_csv("Practice-HRV/polar.csv")
 print(polar_data.head())
 
+"""Note: Issue with polarHRM.csv, as it had 4 columns/features for some of data samples (rows), which was causing errors when 
+loading the data. Why is this the case? As we should identify the issue, as it could lead to problems when working with larger
+datasets, as this one is only a 2 minute reading."""
+
 polarHRM_data = pd.read_csv("Practice-HRV/polarHRM.csv")
 print(polarHRM_data.head())
