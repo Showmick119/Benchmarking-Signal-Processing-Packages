@@ -1,0 +1,7 @@
+numpy
+scipy
+pandas
+biosppy
+heartpy
+neurokit2
+pywt
