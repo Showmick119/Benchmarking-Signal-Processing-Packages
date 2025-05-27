@@ -1,4 +1,4 @@
-# Benchmarking and Evaluating Signal Processing Packages
+# Signal Processing In Python
 An evaluation of the performance and recency of various Python signal processing packages when applied to ECG and PPG data.
 
 Testing and evaluating the following packages:
