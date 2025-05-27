@@ -1,7 +1,7 @@
 # Signal Processing in Python - Internship Report
 An evaluation of the performance and recency of various Python signal processing packages when applied to ECG and PPG data.
 
-1) Tested and evaluated the following packages in `\packages-exploration`:
+### Tested and evaluated the following packages in `\packages-exploration`:
 - Neurokit2
 - HeartPy
 - SciPy
@@ -9,7 +9,7 @@ An evaluation of the performance and recency of various Python signal processing
 - PyWavelets
 - Biosppy
 
-2) Extracted, Analyzed and Plotted Practice Data in `\practice-data-analysis`:
+### Extracted, Analyzed and Plotted Practice Data in `\practice-data-analysis`:
 - Extracted both PPG and ECG data using pandas
 - Plotted both PPG and ECG data using matplotlib
 - Calculated standard deviation of RR Intervals in both polarHRM.csv
