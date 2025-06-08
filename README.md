@@ -26,7 +26,6 @@ An evaluation of the performance and recency of various Python signal processing
 
 ---
 
-### Extracted, Analyzed and Plotted Practice Data in `\HRV105M`, `\HRV106M`, `\HRV108M`:
-- Currently exploring new filter types and peak detection algorithms for the new datasets
-
+### Exploring various models for predicting HRV metrics like SDNN from PPG data:
+- Using CNNs, TCNs, XGBoost in `\models`
 ---
