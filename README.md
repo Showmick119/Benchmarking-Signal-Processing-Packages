@@ -1,4 +1,4 @@
-# Signal Processing & Machine Learning for HRV Metrics Prediction
+# Signal Processing & Machine Learning for HRV Prediction
 - An evaluation of the performance and recency of various Python signal processing packages when applied to ECG and PPG data.
 - Using machine learning models like XGBoost, and neural networks for predicting HRV metrics like SDNN (standard deviation of NN-intervals) from PPG data
 
