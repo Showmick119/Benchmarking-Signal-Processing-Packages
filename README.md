@@ -27,6 +27,11 @@
 
 ---
 
-### Exploring various models for predicting HRV metrics like SDNN from PPG data:
-- Using CNNs, TCNs, XGBoost in `\models`
+### Exploring various models for predicting HRV metrics (SDNN) from Raw PPG data:
+- Using CNNs, LSTMs, Transformers and tree ensemble models like XGBoost in `\models`
+---
+
+### Purpose:
+- Treating this repository as a progress report for my internship.
+- Constantly updating the repository with new tasks, code and lab data.
 ---
