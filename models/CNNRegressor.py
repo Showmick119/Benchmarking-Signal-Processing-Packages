@@ -114,6 +114,12 @@ val_loader   = DataLoader(val_ds, batch_size=len(val_ds))
 test_loader  = DataLoader(test_ds, batch_size=len(test_ds))
 
 class CNNRegressor(nn.Module):
+    def _init_(self):
+        super(CNNRegressor, self).__init__()
+        self.conv1 = nn.Conv1d(in_channels=1, out_channels=32, kernel_size=(5,5), stride=1, padding='same', bias=True)
+        self.pool1 = None
+
+class CNNRegressor(nn.Module):
     def __init__(self):
         super().__init__()
         self.conv1 = nn.Conv1d(1, 32, kernel_size=5)
