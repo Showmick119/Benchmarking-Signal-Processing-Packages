@@ -114,42 +114,6 @@ train_loader = DataLoader(train_ds, batch_size=len(train_ds), shuffle=True)
 val_loader   = DataLoader(val_ds, batch_size=len(val_ds))
 test_loader  = DataLoader(test_ds, batch_size=len(test_ds))
 
-
-class CNNRegressor(nn.Module):
-    def _init_(self):
-        super(CNNRegressor, self).__init__()
-        
-        # 1st Set Of: Convolutional Layer -> Batch Normalization -> ReLU -> Pooling
-        self.conv1 = nn.Conv1d(in_channels=1, out_channels=32, kernel_size=(5,5), stride=1, padding='same', bias=True)
-        self.batchnorm1 = nn.BatchNorm2d()
-        self.dropout1 = nn.Dropout(p=0.25, inplace=True)
-        self.act1 = nn.ReLU(inplace=True)
-        self.pool1 = nn.MaxPool1d(kernel_size=(2,2), stride=1)
-
-        # 2nd Set Of: Convolution Layer -> Batch Normalization -> ReLU -> Pooling
-        self.conv2 = nn.Conv1d()
-        self.batchnorm2 = nn.BatchNorm2d()
-        self.act2 = nn.ReLU()
-        self.pool2 = nn.MaxPool1d()
-
-        # Attention Layer
-        
-
-        # Flatten Outputs
-        self.flatten = nn.Flatten()
-
-        # Fully Connected Layers
-        self.fc1 = nn.Linear()
-        self.fc2 = nn.Linear()
-    
-    def forward(self, x):
-        x = self.pool1(self.act1(self.conv1(x)))
-        x = self.pool2(self.act2(self.conv2(x)))
-        x = self.flatten(x)
-        x = self.fc2(self.fc1(x))
-        output = x
-        return output
-
 class CNNRegressor(nn.Module):
     def __init__(self):
         super().__init__()
