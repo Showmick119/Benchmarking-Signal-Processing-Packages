@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 from scipy.signal import cheby2, sosfiltfilt
 import random
 
-# Chao said this effects results. Check on this.
 np.random.seed(42)
 random.seed(42)
 torch.manual_seed(42)
@@ -41,11 +40,15 @@ def get_baseline_data():
 data_list = get_baseline_data()
 
 row_counts = [len(df) for df in data_list]
-median_rows = int(np.median(row_counts)) # Using median number of rows, as it minimizes interpolation error the most
+
+# Using median number of rows, as it minimizes interpolation error the most
+median_rows = int(np.median(row_counts))
 print(f"Median number of rows: {median_rows}")
 
+# Initializing Matrix X
 X = np.zeros((len(data_list), median_rows))
 
+# Interpolating All Samples
 for i, raw_data in enumerate(data_list):
     raw_time = raw_data.iloc[:, 0]
     raw_ppg = raw_data.iloc[:, 1]
@@ -54,8 +57,9 @@ for i, raw_data in enumerate(data_list):
     uniform_time = np.linspace(0, max_time, median_rows)
     X[i, :] = np.interp(uniform_time, raw_time, raw_ppg)
 
-print(f"Final matrix X shape: {X.shape}")
+print(f"Initial matrix X shape: {X.shape}")
 
+# Filtering Matrix X
 for i, raw_data in enumerate(data_list):
     time = raw_data.iloc[:, 0].values
     
@@ -69,9 +73,10 @@ for i, raw_data in enumerate(data_list):
     X[i, :] = (X[i, :] - np.mean(X[i, :])) / np.std(X[i, :])
 
 print("Filtering and normalization complete.")
-print(X)
 
+# Reshape Matrix X for passing into CNN: Adding Depth (2D -> 3D)
 X = X.reshape(X.shape[0], 1, X.shape[1])
+print(f"Final matrix X shape: {X.shape}")
 
 y = np.array([
     31.946, 
@@ -97,22 +102,24 @@ y = np.array([
 ])
 
 X_train, X_temp, y_train, y_temp = train_test_split(
-    X, y, test_size=0.30, random_state=42
+    X, y, test_size=0.30, train_size=0.70, random_state=42, shuffle=True
 )
+
 X_val, X_test, y_val, y_test = train_test_split(
-    X_temp, y_temp, test_size=0.50, random_state=42
+    X_temp, y_temp, test_size=0.50, train_size=0.50, random_state=42, shuffle=True
 )
 
 train_ds = TensorDataset(torch.from_numpy(X_train).float(),
                          torch.from_numpy(y_train).float())
-val_ds   = TensorDataset(torch.from_numpy(X_val).float(),
-                         torch.from_numpy(y_val).float())
-test_ds  = TensorDataset(torch.from_numpy(X_test).float(),
-                         torch.from_numpy(y_test).float())
+val_ds = TensorDataset(torch.from_numpy(X_val).float(),
+                       torch.from_numpy(y_val).float())
+test_ds = TensorDataset(torch.from_numpy(X_test).float(),
+                        torch.from_numpy(y_test).float())
 
+# Change batch_size when we have more datasets
 train_loader = DataLoader(train_ds, batch_size=len(train_ds), shuffle=True)
-val_loader   = DataLoader(val_ds, batch_size=len(val_ds))
-test_loader  = DataLoader(test_ds, batch_size=len(test_ds))
+val_loader = DataLoader(val_ds, batch_size=len(val_ds), shuffle=False)
+test_loader = DataLoader(test_ds, batch_size=len(test_ds), shuffle=False)
 
 class CNNRegressor(nn.Module):
     def __init__(self):
@@ -186,13 +193,15 @@ with torch.no_grad():
 y_true = np.array(y_true)
 y_pred = np.array(y_pred)
 
-rmse = np.sqrt(mean_squared_error(y_true, y_pred))
-mae  = mean_absolute_error(y_true, y_pred)
-r2   = r2_score(y_true, y_pred)
+mse = mean_squared_error(y_true, y_pred)
+rmse = np.sqrt(mse)
+mae = mean_absolute_error(y_true, y_pred)
+r2 = r2_score(y_true, y_pred)
 
+print(f"Test MSE: {mse:.2f} ms")
 print(f"Test RMSE: {rmse:.2f} ms")
-print(f"Test MAE:  {mae:.2f} ms")
-print(f"Test R²:   {r2:.2f}")
+print(f"Test MAE: {mae:.2f} ms")
+print(f"R²: {r2:.2f} ms")
 
 plt.figure()
 plt.scatter(y_true, y_pred)
@@ -200,4 +209,6 @@ plt.xlabel('True SDNN (ms)')
 plt.ylabel('Predicted SDNN (ms)')
 plt.plot([y_true.min(), y_true.max()],
          [y_true.min(), y_true.max()])
+plt.grid()
+plt.tight_layout()
 plt.show()
