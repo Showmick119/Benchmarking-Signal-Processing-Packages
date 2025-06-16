@@ -150,10 +150,10 @@ class CNNRegressor(nn.Module):
         self.dropout = nn.Dropout(p=0.30)
 
         # Fully Connected Layers:
-        self.fc1 = nn.Linear(in_features=128*685, out_features=128)
+        self.fc1 = nn.Linear(in_features=128*685, out_features=64)
         self.act4 = nn.ReLU()
-        self.fc2 = nn.Linear(in_features=128, out_features=64)
-        self.act5 = nn.ReLU()
+        # self.fc2 = nn.Linear(in_features=128, out_features=64)
+        # self.act5 = nn.ReLU()
         self.fc3 = nn.Linear(in_features=64, out_features=1)
 
     def forward(self, x):
@@ -164,8 +164,8 @@ class CNNRegressor(nn.Module):
         x = self.dropout(x)
         x = self.fc1(x)
         x = self.act4(x)
-        x = self.fc2(x)
-        x = self.act5(x)
+        # x = self.fc2(x)
+        # x = self.act5(x)
         x = self.fc3(x)
         return x.squeeze(-1)
 
@@ -177,6 +177,12 @@ else:
 model = CNNRegressor().to(device)
 criterion = nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+
+'L2 Regularization With Weight Decay:'
+# optimizer = torch.optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-4)
+
+'Learning Rate Scheduler:'
+# scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5, verbose=True)
 
 best_val_loss = float('inf')
 patience, trials = 10, 0
@@ -205,6 +211,9 @@ for epoch in range(1, 101):
             val_losses.append(loss.item())
     val_loss = np.mean(val_losses)
     print(f"Epoch {epoch} Val MSE: {val_loss:.4f}")
+    # scheduler.step(val_loss)
+    for param_group in optimizer.param_groups:
+        print(f"Current LR: {param_group['lr']:.6f}")
 
     if val_loss < best_val_loss:
         best_val_loss = val_loss
