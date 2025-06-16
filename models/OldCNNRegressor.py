@@ -143,32 +143,43 @@ class CNNRegressor(nn.Module):
         x = F.relu(self.fc1(x))
         return self.fc2(x).squeeze(1)
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model  = CNNRegressor().to(device)
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+if torch.cuda.is_available():
+    device = torch.device('cuda')
+else:
+    device = torch.device('cpu')
+
+model = CNNRegressor().to(device)
 criterion = nn.MSELoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
 best_val_loss = float('inf')
 patience, trials = 10, 0
 
 for epoch in range(1, 101):
     model.train()
+    train_losses = []
     for xb, yb in train_loader:
         xb, yb = xb.to(device), yb.to(device)
         optimizer.zero_grad()
-        preds = model(xb)
-        loss  = criterion(preds, yb)
+        train_preds = model(xb)
+        loss = criterion(train_preds, yb)
+        train_losses.append(loss.item())
         loss.backward()
         optimizer.step()
+    train_loss = np.mean(train_losses)
+    print(f"Epoch {epoch} Train MSE: {train_loss:.4f}")
 
     model.eval()
     val_losses = []
     with torch.no_grad():
         for xb, yb in val_loader:
             xb, yb = xb.to(device), yb.to(device)
-            val_losses.append(criterion(model(xb), yb).item())
+            preds = model(xb)
+            loss = criterion(preds, yb)
+            val_losses.append(loss.item())
     val_loss = np.mean(val_losses)
-    print(f"Epoch {epoch}  Val MSE: {val_loss:.4f}")
+    print(f"Epoch {epoch} Val MSE: {val_loss:.4f}")
+
     if val_loss < best_val_loss:
         best_val_loss = val_loss
         torch.save(model.state_dict(), 'best_model.pt')
@@ -176,7 +187,7 @@ for epoch in range(1, 101):
     else:
         trials += 1
         if trials >= patience:
-            print("Early stopping.")
+            print('Early Stopping.')
             break
 
 model.load_state_dict(torch.load('best_model.pt'))
@@ -186,9 +197,9 @@ y_true, y_pred = [], []
 with torch.no_grad():
     for xb, yb in test_loader:
         xb = xb.to(device)
-        preds = model(xb).cpu().numpy()
-        y_pred.extend(preds)
-        y_true.extend(yb.numpy())
+        preds = model(xb)
+        y_pred.extend(preds.cpu().numpy())
+        y_true.extend(yb.cpu().numpy())
 
 y_true = np.array(y_true)
 y_pred = np.array(y_pred)
@@ -208,7 +219,7 @@ plt.scatter(y_true, y_pred)
 plt.xlabel('True SDNN (ms)')
 plt.ylabel('Predicted SDNN (ms)')
 plt.plot([y_true.min(), y_true.max()],
-         [y_true.min(), y_true.max()])
+         [y_pred.min(), y_pred.max()])
 plt.grid()
 plt.tight_layout()
 plt.show()

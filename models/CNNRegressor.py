@@ -143,9 +143,6 @@ class CNNRegressor(nn.Module):
         self.act3 = nn.ReLU()
         self.pool3 = nn.MaxPool1d(kernel_size=2, stride=2)
 
-        # Applying Attention
-        # self.attn = nn.MultiheadAttention(embed_dim=128, num_heads=4, batch_first=True)
-
         # Flatten Outputs:
         self.flatten = nn.Flatten(start_dim=1, end_dim=-1)
 
@@ -163,11 +160,6 @@ class CNNRegressor(nn.Module):
         x = self.pool1(self.act1(self.batchnorm1(self.conv1(x))))
         x = self.pool2(self.act2(self.batchnorm2(self.conv2(x))))
         x = self.pool3(self.act3(self.batchnorm3(self.conv3(x))))
-
-        # x = x.permute(0, 2, 1)
-        # x, _ = self.attn(x, x, x)
-        # x = x.permute(0, 2, 1)
-        
         x = self.flatten(x)
         x = self.dropout(x)
         x = self.fc1(x)
