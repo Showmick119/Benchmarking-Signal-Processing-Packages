@@ -121,9 +121,9 @@ train_loader = DataLoader(train_ds, batch_size=len(train_ds), shuffle=True)
 val_loader = DataLoader(val_ds, batch_size=len(val_ds), shuffle=False)
 test_loader = DataLoader(test_ds, batch_size=len(test_ds), shuffle=False)
 
-class CNNRegressor(nn.Module):
+class CNNWithLSTM(nn.Module):
     def __init__(self):
-        super(CNNRegressor, self).__init__()
+        super(CNNWithLSTM, self).__init__()
 
         # 1st Set Of: Convolutional Layer -> Batch Normalization -> ReLU -> Pooling
         self.conv1 = nn.Conv1d(in_channels=1, out_channels=32, kernel_size=5, stride=1, padding='same')
@@ -142,6 +142,9 @@ class CNNRegressor(nn.Module):
         self.batchnorm3 = nn.BatchNorm1d(num_features=128)
         self.act3 = nn.ReLU()
         self.pool3 = nn.MaxPool1d(kernel_size=2, stride=2)
+
+        # Add LSTM Layer:
+        self.lstm = None
 
         # Flatten Outputs:
         self.flatten = nn.Flatten(start_dim=1, end_dim=-1)
@@ -174,7 +177,7 @@ if torch.cuda.is_available():
 else:
     device = torch.device('cpu')
 
-model = CNNRegressor().to(device)
+model = CNNWithLSTM().to(device)
 criterion = nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 

@@ -121,9 +121,9 @@ train_loader = DataLoader(train_ds, batch_size=len(train_ds), shuffle=True)
 val_loader = DataLoader(val_ds, batch_size=len(val_ds), shuffle=False)
 test_loader = DataLoader(test_ds, batch_size=len(test_ds), shuffle=False)
 
-class CNNRegressor(nn.Module):
+class CNNWithAttn(nn.Module):
     def __init__(self):
-        super(CNNRegressor, self).__init__()
+        super(CNNWithAttn, self).__init__()
 
         # 1st Set Of: Convolutional Layer -> Batch Normalization -> ReLU -> Pooling
         self.conv1 = nn.Conv1d(in_channels=1, out_channels=32, kernel_size=5, stride=1, padding='same')
@@ -143,6 +143,9 @@ class CNNRegressor(nn.Module):
         self.act3 = nn.ReLU()
         self.pool3 = nn.MaxPool1d(kernel_size=2, stride=2)
 
+        # Applying Attention
+        self.attn = nn.MultiheadAttention(embed_dim=128, num_heads=4, batch_first=True)
+
         # Flatten Outputs:
         self.flatten = nn.Flatten(start_dim=1, end_dim=-1)
 
@@ -150,23 +153,24 @@ class CNNRegressor(nn.Module):
         self.dropout = nn.Dropout(p=0.30)
 
         # Fully Connected Layers:
-        self.fc1 = nn.Linear(in_features=128*685, out_features=64)
+        self.fc1 = nn.Linear(in_features=128*685, out_features=128)
         self.act4 = nn.ReLU()
-        # self.fc2 = nn.Linear(in_features=128, out_features=64)
-        # self.act5 = nn.ReLU()
-        self.fc3 = nn.Linear(in_features=64, out_features=1)
+        self.fc2 = nn.Linear(in_features=128, out_features=64)
 
     def forward(self, x):
         x = self.pool1(self.act1(self.batchnorm1(self.conv1(x))))
         x = self.pool2(self.act2(self.batchnorm2(self.conv2(x))))
         x = self.pool3(self.act3(self.batchnorm3(self.conv3(x))))
+
+        x = x.permute(0, 2, 1)
+        x, _ = self.attn(x, x, x)
+        x = x.permute(0, 2, 1)
+        
         x = self.flatten(x)
         x = self.dropout(x)
         x = self.fc1(x)
         x = self.act4(x)
-        # x = self.fc2(x)
-        # x = self.act5(x)
-        x = self.fc3(x)
+        x = self.fc2(x)
         return x.squeeze(-1)
 
 if torch.cuda.is_available():
@@ -174,7 +178,7 @@ if torch.cuda.is_available():
 else:
     device = torch.device('cpu')
 
-model = CNNRegressor().to(device)
+model = CNNWithAttn().to(device)
 criterion = nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
