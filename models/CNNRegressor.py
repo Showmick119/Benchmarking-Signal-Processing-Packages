@@ -176,7 +176,7 @@ else:
 
 model = CNNRegressor().to(device)
 criterion = nn.MSELoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-6)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
 'L2 Regularization With Weight Decay:'
 # optimizer = torch.optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-4)
