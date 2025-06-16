@@ -121,9 +121,9 @@ train_loader = DataLoader(train_ds, batch_size=len(train_ds), shuffle=True)
 val_loader = DataLoader(val_ds, batch_size=len(val_ds), shuffle=False)
 test_loader = DataLoader(test_ds, batch_size=len(test_ds), shuffle=False)
 
-class CNNRegressor(nn.Module):
+class CNNWithAttn(nn.Module):
     def __init__(self):
-        super(CNNRegressor, self).__init__()
+        super(CNNWithAttn, self).__init__()
 
         # 1st Set Of: Convolutional Layer -> Batch Normalization -> ReLU -> Pooling
         self.conv1 = nn.Conv1d(in_channels=1, out_channels=32, kernel_size=5, stride=1, padding='same')
@@ -144,7 +144,7 @@ class CNNRegressor(nn.Module):
         self.pool3 = nn.MaxPool1d(kernel_size=2, stride=2)
 
         # Applying Attention
-        # self.attn = nn.MultiheadAttention(embed_dim=128, num_heads=4, batch_first=True)
+        self.attn = nn.MultiheadAttention(embed_dim=128, num_heads=4, batch_first=True)
 
         # Flatten Outputs:
         self.flatten = nn.Flatten(start_dim=1, end_dim=-1)
@@ -178,9 +178,15 @@ if torch.cuda.is_available():
 else:
     device = torch.device('cpu')
 
-model = CNNRegressor().to(device)
+model = CNNWithAttn().to(device)
 criterion = nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+
+'L2 Regularization With Weight Decay:'
+# optimizer = torch.optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-4)
+
+'Learning Rate Scheduler:'
+# scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5, verbose=True)
 
 best_val_loss = float('inf')
 patience, trials = 10, 0
@@ -209,6 +215,9 @@ for epoch in range(1, 101):
             val_losses.append(loss.item())
     val_loss = np.mean(val_losses)
     print(f"Epoch {epoch} Val MSE: {val_loss:.4f}")
+    # scheduler.step(val_loss)
+    for param_group in optimizer.param_groups:
+        print(f"Current LR: {param_group['lr']:.6f}")
 
     if val_loss < best_val_loss:
         best_val_loss = val_loss
