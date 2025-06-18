@@ -158,7 +158,6 @@ class XGBoostPeakClassifier:
         base_model = xgb.XGBClassifier(
             objective='binary:logistic',
             random_state=random_state,
-            use_label_encoder=False,
             eval_metric='logloss'
         )
         
