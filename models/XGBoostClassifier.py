@@ -18,7 +18,7 @@ class XGBoostPeakClassifier:
         self.model = None
         self.scaler = StandardScaler()
         self.best_params = None
-        
+
         # Ground truth SDNN values from ECG data (extensible as more datasets are processed)
         self.ground_truth_sdnn = {
             'HRV102M_Finger_Baseline': 31.946,
