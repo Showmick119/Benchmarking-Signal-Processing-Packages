@@ -5,16 +5,20 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import SpanSelector
 from utils import LoadDataset, Filters
 from scipy.signal import find_peaks, peak_widths, peak_prominences
+from scipy.integrate import trapezoid
 import pywt
 import argparse
-
 
 class DataPreparationPipeline:
     """
     A pipeline for preparing HRV peak classification data for XGBoost.
-    
+
     This class loads PPG data, detects initial peaks, calculates features
-    for each peak, and provides GUIs for manual correction and labeling.
+    for each peak, and provides GUIs for manual correction and labelling.
+
+    Additionally, this class loads ECG data, detects initial peaks. Does not apply
+    any correction, as ECG data is relatively clean. Using the detected
+    peaks it then calculates the SDNN (true label).
     """
 
     def __init__(self):
@@ -22,52 +26,48 @@ class DataPreparationPipeline:
         self.initial_labels = None
         self.final_labels = None
         self.remove_regions = []
-        
+
     def get_data(self, data_loc, plot=False):
         """
         Load raw ECG, PPG, and polar HRM data from a specified directory.
 
         Args:
-            data_loc (str): Path to the directory containing the input CSV files.
+            data_loc (str): Path tp the directory containing the input CSV files.
             plot (bool): If True, displays the raw signals using a plotting utility.
         """
         self.data_loc = data_loc
         data_loader = LoadDataset(self.data_loc)
         self.time_ecg, self.ecg, self.time_ppg, self.ppg, self.time_polarHRM, self.polarHRM = data_loader.get_data()
-        
+
         if plot:
             data_loader.plot_raw_data(start_time=0, end_time=None)
 
-    def get_peaks(self, filter_type='Chebyshev'):
+    def get_peaks(self, filter_type="Chebyshev"):
         """
-        Automatically detect peaks in PPG signal using filtering and find_peaks.
+        Automatically detect peaks in PPG signal using filtering and SciPy's find_peaks.
 
         Args:
             filter_type (str): Type of filter for processing PPG signal. (Butterworth or Chebyshev)
         """
-        if filter_type.lower() == 'butterworth':
+        if filter_type.lower() == "butterworth":
             filter = Filters()
-            print('\nUsing Butterworth Type-II Filter')
-            print('')
+            print("\nUsing Butterworth Filter\n")
             self.filtered_ppg = filter.butter_filter(self.time_ppg, self.ppg, order=4, signal_type='PPG', plot=False)
-            
-        elif filter_type.lower() == 'chebyshev':
+
+        elif filter_type.lower() == "chebyshev":
             filter = Filters()
-            print('\nUsing Chebyshev Type-II Filter')
-            print('')
+            print("\nUsing Chebyshev Type-II Filter\n")
             self.filtered_ppg = filter.cheby2_filter(self.time_ppg, self.ppg, order=4, rs=40, signal_type='PPG', plot=False)
         
-        # Detect initial peaks
         self.peak_indices_initial, _ = find_peaks(self.filtered_ppg, height=np.mean(self.filtered_ppg))
         self.peak_times_initial = self.time_ppg[self.peak_indices_initial]
-        
-        print(f"Initially detected {len(self.peak_indices_initial)} peaks")
-        
-        # Plot initial detection
+
+        print(f"Initially detected {len(self.peak_indices_initial)} peaks.")
+
         plt.figure(figsize=(15, 6))
         plt.plot(self.time_ppg, self.filtered_ppg, 'r-', lw=1, label='Filtered PPG')
-        plt.scatter(self.peak_times_initial, self.filtered_ppg[self.peak_indices_initial], 
-                   marker='x', color='black', s=50, label='Detected Peaks')
+        plt.scatter(self.peak_times_initial, self.filtered_ppg[self.peak_indices_initial],
+                    marker='x', color='black', s=50, label='Detected Peaks')
         plt.title('Initial Peak Detection')
         plt.xlabel('Time (ms)')
         plt.ylabel('Amplitude')
@@ -75,69 +75,75 @@ class DataPreparationPipeline:
         plt.grid(True)
         plt.show()
 
-    def calculate_features_for_peak(self, peak_idx, all_peak_indices, signal, time, prominence=None):
+    def calculate_features_for_peaks(self, peak_idx, all_peak_indices, signal, time):
         """
-        Calculate 15 features for a single peak.
-        
+        Calculates 15 morphological features for a singular peak.
+
         Args:
             peak_idx (int): Index of the peak in the signal
-            all_peak_indices (np.array): Array of all peak indices 
+            all_peak_indices (np.array): Array of all peak indices
             signal (np.array): The signal data
             time (np.array): Time array
-            prominence (float): Pre-calculated prominence value (optional)
-            
+
         Returns:
             list: 15 features for the peak
         """
         features = []
-        
+
         try:
             # 1. Amplitude
-            amplitude = signal[peak_idx]
-            features.append(amplitude)
-            
-            # 2. Prominence (use pre-calculated value if provided, otherwise calculate individually)
-            if prominence is not None:
-                features.append(prominence)
-            else:
-                try:
-                    prominences, _ = peak_prominences(signal, [peak_idx])
-                    prominence_val = prominences[0] if len(prominences) > 0 else 0
-                except:
-                    prominence_val = 0
-                features.append(prominence_val)
-            
-            # 3. Width at half prominence
             try:
-                widths, _, _, _ = peak_widths(signal, [peak_idx], rel_height=0.5)
-                width_half_prom = widths[0] if len(widths) > 0 else 0
+                amplitude = signal[peak_idx]
+            except:
+                amplitude = 0
+            features.append(amplitude)
+
+            # 2. Prominence
+            try:
+                prominences = peak_prominences(signal, all_peak_indices)[0]
+                prominence_idx = list(all_peak_indices).index(peak_idx)
+                prominence_val = prominences[prominence_idx]
+            except:
+                prominence_val = 0
+            features.append(prominence_val)
+
+            # 3. With at Half Prominence
+            try:
+                widths = peak_widths(signal, all_peak_indices, rel_height=0.50)[0]
+                width_idx = list(all_peak_indices).index(peak_idx)
+                width_half_prom = widths[width_idx]
             except:
                 width_half_prom = 0
             features.append(width_half_prom)
-            
-            # 4. Pulse area (approximate using width and amplitude)
-            'Can extend this to use integration later on, for more accuracy'
+
+            # 4. Pulse Area (Estimate Using Width and Amplitude, or integrate)
             try:
-                pulse_area = amplitude * width_half_prom
+                window = min(20, len(signal) // 10)
+                start_idx = max(0, peak_idx - window)
+                end_idx = min(len(signal), peak_idx + window)
+                segment = signal[start_idx:end_idx]
+                baseline = np.min(segment)
+                adjusted = segment - baseline
+                pulse_area = trapezoid(adjusted, x=None, dx=1)
             except:
                 pulse_area = 0
             features.append(pulse_area)
-            
-            # 5-6. Rise and decay times
+
+            # 5-6. Rise and Decay Times
             try:
-                window = min(20, len(signal) // 10)  # Adaptive window
+                window = min(20, len(signal) // 10)
                 start_idx = max(0, peak_idx - window)
                 end_idx = min(len(signal), peak_idx + window)
-                
-                # Rise time: from local min before to peak
+
+                # Rise Time: from local minima before the peak to the actual peak
                 before_segment = signal[start_idx:peak_idx]
                 if len(before_segment) > 1:
                     min_before_idx = np.argmin(before_segment) + start_idx
                     rise_time = time[peak_idx] - time[min_before_idx]
                 else:
                     rise_time = 0
-                    
-                # Decay time: from peak to local min after
+
+                # Decay Time: from the actual peak to local minima after the peak
                 after_segment = signal[peak_idx:end_idx]
                 if len(after_segment) > 1:
                     min_after_idx = np.argmin(after_segment) + peak_idx
@@ -147,54 +153,56 @@ class DataPreparationPipeline:
             except:
                 rise_time = 0
                 decay_time = 0
-            
             features.extend([rise_time, decay_time])
-            
+
             # 7-8. Max upslope and max inflection
             try:
                 window = min(10, len(signal) // 20)
                 start_idx = max(0, peak_idx - window)
-                end_idx = min(len(signal), peak_idx + window)
-                
-                # Max upslope
+                end_idx = min(len(signal), peak_idx + window + 1)
+
+                # Max Upslope
                 if peak_idx > 0:
-                    slopes = np.diff(signal[start_idx:peak_idx+1])
-                    max_upslope = np.max(slopes) if len(slopes) > 0 else 0
+                    rising_segment = signal[start_idx:(peak_idx + 1)]
+                    rising_deriv1 = np.diff(rising_segment, n=1)
+                    max_upslope = np.max(rising_deriv1)
                 else:
                     max_upslope = 0
-                    
-                # Max inflection (second derivative)
+                
+                # Max Inflection
                 segment = signal[start_idx:end_idx]
                 if len(segment) > 2:
-                    second_deriv = np.diff(segment, n=2)
-                    max_inflection = np.max(np.abs(second_deriv)) if len(second_deriv) > 0 else 0
+                    segment_deriv2 = np.diff(segment, n=2)
+                    if len(segment_deriv2) > 0:
+                        max_inflection = np.max(np.abs(segment_deriv2))
+                    else:
+                        max_inflection = 0
                 else:
                     max_inflection = 0
             except:
                 max_upslope = 0
                 max_inflection = 0
-                
             features.extend([max_upslope, max_inflection])
-            
-            # 9-11. Inter-beat intervals
+
+            # 9-11. Inter-Beat Intervals
             try:
                 peak_position = np.where(all_peak_indices == peak_idx)[0]
                 if len(peak_position) > 0:
                     pos = peak_position[0]
-                    
+
                     # Previous IBI
                     if pos > 0:
-                        ibi_prev = time[peak_idx] - time[all_peak_indices[pos-1]]
+                        ibi_prev = time[peak_idx] - time[all_peak_indices[(pos - 1)]]
                     else:
                         ibi_prev = 0
-                        
-                    # Next IBI  
-                    if pos < len(all_peak_indices) - 1:
-                        ibi_next = time[all_peak_indices[pos+1]] - time[peak_idx]
+
+                    # Next IBI
+                    if pos < (len(all_peak_indices) - 1):
+                        ibi_next = time[all_peak_indices[(pos + 1)]] - time[peak_idx]
                     else:
                         ibi_next = 0
-                        
-                    # IBI ratio
+
+                    # IBI Ratio
                     if ibi_prev > 0 and ibi_next > 0:
                         ibi_ratio = ibi_next / ibi_prev
                     else:
@@ -202,46 +210,55 @@ class DataPreparationPipeline:
                 else:
                     ibi_prev = ibi_next = ibi_ratio = 0
             except:
-                ibi_prev = ibi_next = ibi_ratio = 0
-                
+                ibi_ratio = ibi_next = ibi_prev = 0
             features.extend([ibi_prev, ibi_next, ibi_ratio])
-            
-            # 12-13. Signal quality metrics
+
+            # 12-13. Signal Quality Metrics
             try:
                 window = min(20, len(signal) // 10)
                 start_idx = max(0, peak_idx - window)
                 end_idx = min(len(signal), peak_idx + window)
                 segment = signal[start_idx:end_idx]
+
+                # Local Variance
+                if len(segment) > 0:
+                    local_variance = np.var(segment)
+                else:
+                    local_variance = 0
                 
-                # Local variance
-                local_variance = np.var(segment) if len(segment) > 1 else 0
-                
-                # SNR (simplified)
-                signal_power = amplitude ** 2
-                noise_power = local_variance
-                snr = signal_power / noise_power if noise_power > 0 else 0
+                # SNR (Signal-to-Noise Ratio) Estimate
+                signal_power = np.mean(segment ** 2)
+                noise_power = local_variance ** 2
+
+                if noise_power > 0 and signal_power > 0:
+                    snr =  10 * np.log10(signal_power / noise_power)
+                else:
+                    snr = 0
             except:
                 local_variance = 0
                 snr = 0
-                
             features.extend([local_variance, snr])
-            
-            # 14-15. Frequency features
+
+            # 14-15. Frequency Features
             try:
                 window = min(50, len(signal) // 5)
                 start_idx = max(0, peak_idx - window)
                 end_idx = min(len(signal), peak_idx + window)
                 segment = signal[start_idx:end_idx]
-                
+
                 if len(segment) > 4:
-                    # Frequency energy using FFT
+                    # Frequency Energy using FFT
                     fft = np.fft.fft(segment)
-                    freq_energy = np.sum(np.abs(fft)**2)
-                    
-                    # Wavelet coefficient
+                    freq_energy = np.sum(np.abs(fft) ** 2)
+
+                    # Wavelet Coefficient
                     try:
-                        coeffs = pywt.dwt(segment, 'db4')
-                        wavelet_coef = np.mean(np.abs(coeffs[1])) if len(coeffs[1]) > 0 else 0
+                        coeffs = pywt.wavedec(segment, 'db4', level=1)
+                        if len(coeffs[1]) > 0:
+                            detail_coef = coeffs[1]
+                            wavelet_coef = np.mean(np.abs(detail_coef))
+                        else:
+                            wavelet_coef = 0
                     except:
                         wavelet_coef = 0
                 else:
@@ -250,41 +267,31 @@ class DataPreparationPipeline:
             except:
                 freq_energy = 0
                 wavelet_coef = 0
-                
             features.extend([freq_energy, wavelet_coef])
-            
+
         except Exception as e:
             print(f"Error calculating features for peak at index {peak_idx}: {e}")
-            # Return zeros for all features if calculation fails
             features = [0] * 15
-            
+
         return features
 
     def calculate_all_initial_features(self):
-        """Calculate features for all initially detected peaks before any manual correction."""
+        """Calculate features for all initially deteced peaks before any manual correction."""
         print("Calculating features for all initially detected peaks...")
-        
-        # Pre-calculate prominences for all peaks at once (this is key for proper prominence calculation)
-        try:
-            self.all_prominences, _ = peak_prominences(self.filtered_ppg, self.peak_indices_initial)
-            print(f"Successfully calculated prominences for all peaks")
-        except Exception as e:
-            print(f"Error calculating prominences: {e}")
-            self.all_prominences = np.zeros(len(self.peak_indices_initial))
-        
+
         self.initial_features = []
-        self.initial_labels = np.ones(len(self.peak_indices_initial))  # Initially all peaks are considered true
-        
+        self.initial_labels = np.ones(len(self.peak_indices_initial))
+
         for i, peak_idx in enumerate(self.peak_indices_initial):
-            features = self.calculate_features_for_peak(peak_idx, self.peak_indices_initial, 
-                                                      self.filtered_ppg, self.time_ppg, 
-                                                      prominence=self.all_prominences[i])
+            features = self.calculate_features_for_peaks(peak_idx=peak_idx, 
+                                                        all_peak_indices=self.peak_indices_initial,
+                                                        signal=self.filtered_ppg,
+                                                        time=self.time_ecg)
             self.initial_features.append(features)
-            
+
         self.initial_features = np.array(self.initial_features)
         print(f"Calculated features for {len(self.initial_features)} peaks")
         print(f"Feature matrix shape: {self.initial_features.shape}")
-        print(f"Prominence range: {np.min(self.all_prominences):.3f} to {np.max(self.all_prominences):.3f}")
 
     def remove_unusable_signal(self):
         """
@@ -332,7 +339,7 @@ class DataPreparationPipeline:
         # Update labels for peaks in removed regions
         for xmin, xmax in self.remove_regions:
             for i, peak_time in enumerate(self.peak_times_initial):
-                if xmin <= peak_time <= xmax:
+                if (xmin <= peak_time) and (peak_time <= xmax):
                     self.initial_labels[i] = 0  # Mark as false peak
                     
         print(f"Removed {len(self.remove_regions)} region(s) from signals.")
@@ -448,8 +455,7 @@ class DataPreparationPipeline:
                 
                 # Calculate features for new peak (no pre-calculated prominence for new peaks)
                 new_features = self.calculate_features_for_peak(orig_idx, current_peak_indices, 
-                                                              self.filtered_ppg, self.time_ppg, 
-                                                              prominence=None)
+                                                              self.filtered_ppg, self.time_ppg)
                 
                 # Add to data structures
                 current_peak_indices = np.append(current_peak_indices, orig_idx)
