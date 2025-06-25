@@ -232,7 +232,7 @@ class XGBoostPeakClassifier:
         base_model = xgb.XGBClassifier(
             objective='binary:logistic',
             random_state=random_state,
-            tree_method='hist',
+            tree_method='gpu_hist',
             device='cuda',
             eval_metric='logloss',
             enable_categorical=False
