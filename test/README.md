@@ -2,7 +2,7 @@
 
 This directory contains two Google Colab notebooks for training and testing XGBoost models for heart rate variability (HRV) peak classification.
 
-## 🚀 **Current Status: Local Testing Mode**
+## **Current Status: Local Testing Mode**
 Both notebooks are configured for **local development and stress-testing** with you. Once verified, simply uncomment the Colab sections for deployment.
 
 ## Notebooks
@@ -37,16 +37,16 @@ Both notebooks are configured for **local development and stress-testing** with 
 - Comprehensive SDNN comparison with ground truth ECG data
 - Error analysis and improvement metrics
 
-## 🧪 **Stress Testing Results**
+## **Stress Testing Results**
 
-### ✅ **Training Notebook Tests**
+### **Training Notebook Tests**
 - **Data Loading**: ✓ 16,328 samples from 97 datasets loaded successfully
 - **Feature Structure**: ✓ 15 features per sample verified
 - **Class Balance**: ✓ 89.9% true peaks, 10.1% false peaks
 - **Model Saving**: ✓ Saves to `test/` directory for easy access
 - **Environment**: ✓ Local testing mode works perfectly
 
-### ✅ **Testing Notebook Tests**  
+### **Testing Notebook Tests**  
 - **Dataset Discovery**: ✓ 470 datasets found across all 4 subdirectories
 - **Data Loading**: ✓ `bangle.csv` (PPG) and `polar.csv` (ECG) loaded correctly
 - **Feature Extraction**: ✓ 139 peaks detected from test dataset
@@ -71,7 +71,7 @@ Both notebooks automatically handle dependencies in **local testing mode**
 4. **Select a dataset**: Enter the number (1-470) 
 5. Continue running cells to see results
 
-### **🚀 Deploying to Google Colab**
+### **Deploying to Google Colab**
 When ready for Colab deployment:
 1. **Uncomment** the git clone and installation sections
 2. **Comment out** the local testing sections
