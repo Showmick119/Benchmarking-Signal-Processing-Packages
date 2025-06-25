@@ -218,13 +218,13 @@ class XGBoostPeakClassifier:
         
         # Define parameter grid for hyperparameter tuning
         param_grid = {
-            'max_depth': [4, 6, 8, 10],
-            'learning_rate': [0.05, 0.01, 0.1],
-            'n_estimators': [100, 200],
-            'min_child_weight': [1, 3],
-            'gamma': [0, 0.1],
-            'subsample': [0.6, 0.7, 0.8],
-            'colsample_bytree': [0.6, 0.7, 0.8],
+            'max_depth': [4, 6, 8, 10, 12],
+            'learning_rate': [0.001, 0.05, 0.01, 0.1, 0.2],
+            'n_estimators': [50, 100, 200, 250, 300],
+            'min_child_weight': [1, 3, 5],
+            'gamma': [0, 0.1, 0.2],
+            'subsample': [0.5, 0.6, 0.7, 0.8, 0.9],
+            'colsample_bytree': [0.5, 0.6, 0.7, 0.8, 0.9],
             'scale_pos_weight': [1, sum(y_train == 0) / sum(y_train == 1)]
         }
         
