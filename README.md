@@ -35,3 +35,7 @@
 - Treating this repository as a progress report for my internship.
 - Constantly updating the repository with new tasks, code and lab data.
 ---
+
+### Run the Models:
+- [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Showmick119/Benchmarking-Signal-Processing-Packages/blob/main/practice/analysis/filtered_bangle.ipynb)
+- [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Showmick119/Benchmarking-Signal-Processing-Packages/blob/main/practice/analysis/filtered_bangle.ipynb)
