@@ -34,6 +34,9 @@
 ### Purpose:
 - Treating this repository as a progress report for my internship.
 - Constantly updating the repository with new tasks, code and lab data.
+
+![image](https://github.com/user-attachments/assets/f21b2dc2-fe4c-48bc-b29f-de32ea404f91)
+
 ---
 
 ### Run the Models:
