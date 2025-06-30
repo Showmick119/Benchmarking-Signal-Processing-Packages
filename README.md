@@ -29,16 +29,20 @@
 
 ### Exploring various models for predicting HRV metrics (SDNN) from Raw PPG data:
 - Using CNNs, LSTMs, Transformers and tree ensemble models like XGBoost in `\models`
+
 ---
 
 ### Purpose:
 - Treating this repository as a progress report for my internship.
 - Constantly updating the repository with new tasks, code and lab data.
 
+### XGBoost Classifier Pipeline:
 ![image](https://github.com/user-attachments/assets/f21b2dc2-fe4c-48bc-b29f-de32ea404f91)
 
 ---
 
 ### Run the Models:
-- Train the Model: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Showmick119/Benchmarking-Signal-Processing-Packages/blob/main/practice/analysis/filtered_bangle.ipynb)
-- Run Inference on the Model: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Showmick119/Benchmarking-Signal-Processing-Packages/blob/main/practice/analysis/filtered_bangle.ipynb)
+- Train the Model: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Showmick119/Benchmarking-Signal-Processing-Packages/blob/main/test/train_hrv_model.ipynb)
+- Run Inference on the Model: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Showmick119/Benchmarking-Signal-Processing-Packages/blob/main/test/test_hrv_model.ipynb)
+
+---
